@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,83 +11,86 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Book, Clock, Users } from 'lucide-react';
+import { Search, Book, Clock, Users, Loader2 } from 'lucide-react';
+import { storyService } from '@/services/api';
+import { toast } from 'sonner';
 
-// Mock data for stories
-const MOCK_STORIES = [
-  {
-    id: 1,
-    title: "The Portal to Valtor",
-    genre: "Fantasy",
-    genreColor: "purple",
-    excerpt: "It was an ordinary day until Aanya found a shimmering blue portal behind her bookshelf. Curiosity took over, and she stepped through it, landing in a world lit by twin suns and floating islands made of crystal.",
-    contributors: 8,
-    paragraphs: 4,
-    updatedAt: "2 hours ago",
-  },
-  {
-    id: 2,
-    title: "The Last Starfighter",
-    genre: "Sci-Fi",
-    genreColor: "blue",
-    excerpt: "Commander Jaxon stared at the burning wreckage of his ship, the last defense against the Krill armada. With Earth's defenses crippled, he had one final, desperate plan.",
-    contributors: 12,
-    paragraphs: 15,
-    updatedAt: "1 day ago",
-  },
-  {
-    id: 3,
-    title: "Whispers in the Dark",
-    genre: "Mystery",
-    genreColor: "purple",
-    excerpt: "Detective Sarah Morgan knew the abandoned Blackwood Manor held secrets, but she never expected to find the diary. As she flipped through its yellowed pages, the temperature in the room plummeted.",
-    contributors: 6,
-    paragraphs: 9,
-    updatedAt: "3 days ago",
-  },
-  {
-    id: 4,
-    title: "Hearts Under the Cherry Trees",
-    genre: "Romance",
-    genreColor: "blue",
-    excerpt: "Mei had sworn she would never return to her hometown, but her grandmother's letter changed everything. Now standing under the cherry blossoms, she wondered if he still remembered their promise.",
-    contributors: 10,
-    paragraphs: 12,
-    updatedAt: "1 week ago",
-  },
-  {
-    id: 5,
-    title: "The Ancient Prophecy",
-    genre: "Fantasy",
-    genreColor: "purple",
-    excerpt: "The old scroll crumbled in Professor Harrington's hands, but he had already translated enough to know the prophecy was true. The five stones would need to be united before the solstice.",
-    contributors: 15,
-    paragraphs: 20,
-    updatedAt: "2 days ago",
-  },
-  {
-    id: 6,
-    title: "Neon Nights",
-    genre: "Cyberpunk",
-    genreColor: "blue",
-    excerpt: "Rain pattered against the neon-lit streets of New Tokyo as Rio adjusted her cybernetic arm. The data chip hidden in her synthetic skin was worth more than the entire city district.",
-    contributors: 7,
-    paragraphs: 8,
-    updatedAt: "5 hours ago",
-  },
-];
+interface Story {
+  _id: string;
+  title: string;
+  genre: string;
+  prompt: string;
+  contributors: string[];
+  createdAt: string;
+  updatedAt: string;
+  paragraphs?: any[];
+}
 
 const Stories = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [genreFilter, setGenreFilter] = useState('all');
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchStories = async () => {
+      try {
+        const data = await storyService.listStories();
+        setStories(data);
+      } catch (error) {
+        console.error('Error fetching stories:', error);
+        toast.error('Failed to fetch stories. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStories();
+  }, []);
   
   // Filter stories based on search term and genre
-  const filteredStories = MOCK_STORIES.filter(story => {
+  const filteredStories = stories.filter(story => {
     const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          story.excerpt.toLowerCase().includes(searchTerm.toLowerCase());
+                          story.prompt.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesGenre = genreFilter === 'all' || story.genre === genreFilter;
     return matchesSearch && matchesGenre;
   });
+
+  const getGenreColor = (genre: string) => {
+    // Map genres to colors
+    const genreColors: { [key: string]: string } = {
+      'Fantasy': 'purple',
+      'Sci-Fi': 'blue',
+      'Mystery': 'purple',
+      'Romance': 'blue',
+      'Cyberpunk': 'blue'
+    };
+    return genreColors[genre] || 'blue';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return `${Math.round(diffInHours)} hours ago`;
+    } else if (diffInHours < 48) {
+      return '1 day ago';
+    } else {
+      return `${Math.round(diffInHours / 24)} days ago`;
+    }
+  };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container px-4 mx-auto max-w-6xl py-8 flex justify-center items-center min-h-[60vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-story-purple" />
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -136,38 +138,42 @@ const Stories = () => {
         
         {/* Stories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredStories.map(story => (
-            <Link to={`/stories/${story.id}`} key={story.id} className="group">
-              <Card className="story-card h-full border-0 shadow-md transition-all hover:border-story-purple/20">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-bold font-serif group-hover:text-story-purple transition-colors line-clamp-1">
-                      {story.title}
-                    </h3>
-                    <span className={`px-2 py-1 bg-story-${story.genreColor}/10 text-story-${story.genreColor} text-xs rounded-full`}>
-                      {story.genre}
-                    </span>
-                  </div>
-                  <p className="text-gray-600 mb-6 line-clamp-3">
-                    {story.excerpt}
-                  </p>
-                  <div className="flex flex-wrap justify-between items-center gap-y-2 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 mr-1" />
-                      <span>{story.contributors} contributors</span>
+          {filteredStories.map(story => {
+            const genreColor = getGenreColor(story.genre);
+            return (
+              <Link to={`/stories/${story._id}`} key={story._id} className="group">
+                <Card className="story-card h-full border-0 shadow-md transition-all hover:border-story-purple/20">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-bold font-serif group-hover:text-story-purple transition-colors line-clamp-1">
+                        {story.title}
+                      </h3>
+                      <span className={`px-2 py-1 bg-story-${genreColor}/10 text-story-${genreColor} text-xs rounded-full`}>
+                        {story.genre}
+                      </span>
                     </div>
-                    <div>
-                      {story.paragraphs} paragraphs
+                    <div 
+                      className="text-gray-600 mb-6 line-clamp-3"
+                      dangerouslySetInnerHTML={{ __html: story.prompt }}
+                    />
+                    <div className="flex flex-wrap justify-between items-center gap-y-2 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-1" />
+                        <span>{story.contributors.length} contributors</span>
+                      </div>
+                      <div>
+                        {story.paragraphs?.length || 0} paragraphs
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>Updated {formatDate(story.updatedAt)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span>Updated {story.updatedAt}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
         
         {filteredStories.length === 0 && (

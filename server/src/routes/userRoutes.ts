@@ -103,8 +103,48 @@ router.put('/change-password', auth, async (req: any, res) => {
     res.status(500).json({ message: 'Something went wrong' });
   }
 });
+router.get('/email/:email', auth, async (req: any, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
 
-// Get user by email
+    // Use regex to search for partial email matches
+    const users = await User.find({ 
+      email: { 
+        $regex: new RegExp(email.toLowerCase(), 'i') 
+      } 
+    })
+    .select('-password')
+    .limit(5); // Limit to 5 results to prevent overwhelming response
+    
+    if (!users || users.length === 0) {
+      return res.status(200).json({ 
+        message: 'No users found',
+        users: [] 
+      });
+    }
 
+    res.json({ 
+      message: 'Users found',
+      users 
+    });
+  } catch (error) {
+    console.error('Error searching users by email:', error);
+    if (error instanceof Error) {
+      res.status(500).json({ 
+        message: 'Failed to search users',
+        error: error.message 
+      });
+    } else {
+      res.status(500).json({ 
+        message: 'Failed to search users',
+        error: 'An unknown error occurred' 
+      });
+    }
+  }
+});
 
 export default router; 

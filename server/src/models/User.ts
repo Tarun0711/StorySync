@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 
 interface IUser {
   name: string;
+  username: string;
   email: string;
   password: string;
   bio: string;
@@ -26,6 +27,13 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>({
     type: String,
     required: true,
     trim: true
+  },
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true
   },
   email: {
     type: String,
@@ -58,6 +66,10 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>({
   points: {
     type: Number,
     default: 0
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
@@ -65,18 +77,13 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error: any) {
-    next(error);
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 8);
   }
+  next();
 });
 
-// Method to compare passwords
+// Method to compare password for login
 userSchema.methods.comparePassword = async function(candidatePassword: string) {
   return bcrypt.compare(candidatePassword, this.password);
 };

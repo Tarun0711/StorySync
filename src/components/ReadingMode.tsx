@@ -1,4 +1,3 @@
-
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -7,7 +6,7 @@ import { X } from 'lucide-react';
 interface ReadingModeProps {
   title: string;
   genre: string;
-  paragraphs: {
+  paragraphs?: {
     id: number;
     content: string;
     authorName: string;
@@ -26,7 +25,7 @@ const getBackgroundByGenre = (genre: string): string => {
   return genres[genre] || 'bg-gradient-to-br from-gray-200 to-white';
 };
 
-const ReadingMode = ({ title, genre, paragraphs, onClose }: ReadingModeProps) => {
+const ReadingMode = ({ title, genre, paragraphs = [], onClose }: ReadingModeProps) => {
   const [fontSize, setFontSize] = useState(18);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -81,14 +80,20 @@ const ReadingMode = ({ title, genre, paragraphs, onClose }: ReadingModeProps) =>
             className="max-w-3xl mx-auto space-y-6"
             style={{ fontSize: `${fontSize}px` }}
           >
-            {paragraphs.map((paragraph, index) => (
-              <div key={paragraph.id} className="prose max-w-none">
-                <p className="leading-relaxed text-gray-800">{paragraph.content}</p>
-                <div className="text-sm text-gray-500 mt-2">
-                  — {paragraph.authorName}
-                </div>
+            {paragraphs.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                No paragraphs available yet.
               </div>
-            ))}
+            ) : (
+              paragraphs.map((paragraph, index) => (
+                <div key={paragraph.id} className="prose max-w-none">
+                  <p className="leading-relaxed text-gray-800">{paragraph.content}</p>
+                  <div className="text-sm text-gray-500 mt-2">
+                    — {paragraph.authorName}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </ScrollArea>
       </div>

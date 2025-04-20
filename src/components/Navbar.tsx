@@ -89,7 +89,7 @@ const Navbar = () => {
                   </PopoverContent>
                 </Popover>
                 <Link 
-                  to={`/profile/${user?.id}`} 
+                  to={`/profile/${user?._id}`} 
                   className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-story-purple"
                 >
                   <User className="h-5 w-5 mr-1" />
@@ -160,7 +160,7 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to={`/profile/${user?.id}`}
+                  to={`/profile/${user?._id}`}
                   className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-story-purple"
                   onClick={toggleMenu}
                 >

@@ -28,8 +28,8 @@ export const authService = {
     return response.data;
   },
  
-  signup: async (name: string, email: string, password: string) => {
-    const response = await api.post('/auth/signup', { name, email, password });
+  signup: async (name: string, username: string, email: string, password: string) => {
+    const response = await api.post('/auth/register', { name, username, email, password });
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -49,6 +49,11 @@ export const userService = {
     return response.data;
   },
 
+  getUserByEmail: async (email: string) => {
+    const response = await api.get(`/user/email/${email}`);
+    return response.data;
+  },
+
   updateProfile: async (data: { name?: string; bio?: string; profilePicture?: string }) => {
     const response = await api.put('/user/profile', data);
     return response.data;
@@ -56,6 +61,45 @@ export const userService = {
 
   changePassword: async (currentPassword: string, newPassword: string) => {
     const response = await api.put('/user/change-password', { currentPassword, newPassword });
+    return response.data;
+  },
+};
+
+export const storyService = {
+  createStory: async (data: {
+    title: string;
+    genre: string;
+    prompt: string;
+    isPrivate: boolean;
+    contributors: string[];
+  }) => {
+    const response = await api.post('/stories', data);
+    return response.data;
+  },
+
+  getStory: async (storyId: string) => {
+    const response = await api.get(`/stories/${storyId}`);
+    return response.data;
+  },
+
+  updateStory: async (storyId: string, data: {
+    title?: string;
+    genre?: string;
+    prompt?: string;
+    isPrivate?: boolean;
+    contributors?: string[];
+  }) => {
+    const response = await api.put(`/stories/${storyId}`, data);
+    return response.data;
+  },
+
+  deleteStory: async (storyId: string) => {
+    const response = await api.delete(`/stories/${storyId}`);
+    return response.data;
+  },
+
+  listStories: async () => {
+    const response = await api.get('/stories');
     return response.data;
   },
 }; 

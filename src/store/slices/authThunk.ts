@@ -26,13 +26,12 @@ export const login = (email: string, password: string) => async (dispatch: AppDi
 
   });
 
-export const signup = (name: string, email: string, password: string) => async (dispatch: AppDispatch) =>
+export const signup = (name: string, username: string, email: string, password: string) => async (dispatch: AppDispatch) =>
   handleThunk(dispatch, async () => {
-    const response = await authService.signup(name, email, password);
+    const response = await authService.signup(name, username, email, password);
     dispatch(loginSuccess({ user: response.user, token: response.token }));
     dispatch(setAuthenticated(true));
     window.location.reload();
-
   });
 
 export const logoutUser = () => async (dispatch: AppDispatch) =>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/MainLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,7 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Book, Plus, Minus } from 'lucide-react';
+import { Book, Plus, Minus, Check, X, Search } from 'lucide-react';
+import { storyService, userService } from '@/services/api';
+import { toast } from 'sonner';
 
 const CreateStory = () => {
   const navigate = useNavigate();
@@ -22,7 +24,12 @@ const CreateStory = () => {
   const [prompt, setPrompt] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [contributors, setContributors] = useState<string[]>(['']);
+  const [contributorValidation, setContributorValidation] = useState<{ [key: string]: { isValid: boolean; name?: string } }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ _id: string; email: string; name: string }[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<{ [key: string]: { _id: string; email: string; name: string } }>({});
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   
   const addContributor = () => {
     setContributors([...contributors, '']);
@@ -40,16 +47,117 @@ const CreateStory = () => {
     setContributors(newContributors);
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const searchUsers = async (email: string, index: number) => {
+    if (!email.trim()) {
+      setSearchResults([]);
+      setContributorValidation(prev => ({ ...prev, [index]: { isValid: false } }));
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await userService.getUserByEmail(email.trim());
+      setSearchResults(response.users);
+      
+      // Check if the current email matches any of the search results
+      const exactMatch = response.users.find(user => 
+        user.email.toLowerCase() === email.trim().toLowerCase()
+      );
+      
+      if (exactMatch) {
+        setSelectedUsers(prev => ({ ...prev, [index]: exactMatch }));
+        setContributorValidation(prev => ({
+          ...prev,
+          [index]: { isValid: true, name: exactMatch.name }
+        }));
+      } else {
+        setContributorValidation(prev => ({
+          ...prev,
+          [index]: { isValid: false }
+        }));
+      }
+    } catch (error) {
+      setSearchResults([]);
+      setContributorValidation(prev => ({
+        ...prev,
+        [index]: { isValid: false }
+      }));
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const debounce = useCallback((func: Function, delay: number) => {
+    return (...args: any[]) => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+      const timeout = setTimeout(() => {
+        func(...args);
+      }, delay);
+      setSearchTimeout(timeout);
+    };
+  }, [searchTimeout]);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
+  }, [searchTimeout]);
+
+  const handleContributorChange = async (index: number, value: string) => {
+    const newContributors = [...contributors];
+    newContributors[index] = value;
+    setContributors(newContributors);
+    
+    // Clear validation when input is empty
+    if (!value.trim()) {
+      setContributorValidation(prev => ({ ...prev, [index]: { isValid: false } }));
+      setSearchResults([]);
+      return;
+    }
+
+    // Use debounced search
+    debounce(() => searchUsers(value, index), 500)();
+  };
+
+  const handleUserSelect = (index: number, user: { _id: string; email: string; name: string }) => {
+    const newContributors = [...contributors];
+    newContributors[index] = user.email;
+    setContributors(newContributors);
+    setSelectedUsers(prev => ({ ...prev, [index]: user }));
+    setContributorValidation(prev => ({
+      ...prev,
+      [index]: { isValid: true, name: user.name }
+    }));
+    setSearchResults([]);
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate creating a story
-    setTimeout(() => {
-      // In a real app, this would be an API call
+    try {
+      const contributorIds = Object.values(selectedUsers).map(user => user._id);
+      const storyData = {
+        title,
+        genre,
+        prompt,
+        isPrivate,
+        contributors: contributorIds
+      };
+
+      const response = await storyService.createStory(storyData);
+      toast.success('Story created successfully!');
+      navigate(`/stories/${response._id}`);
+    } catch (error) {
+      console.error('Error creating story:', error);
+      toast.error('Failed to create story. Please try again.');
+    } finally {
       setIsSubmitting(false);
-      navigate('/stories/1'); // Navigate to the newly created story
-    }, 1500);
+    }
   };
 
   return (
@@ -141,23 +249,64 @@ const CreateStory = () => {
                     </div>
                     
                     {contributors.map((contributor, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Input
-                          value={contributor}
-                          onChange={(e) => updateContributor(index, e.target.value)}
-                          placeholder="Enter email address"
-                          className="flex-grow"
-                        />
-                        {contributors.length > 1 && (
-                          <Button
-                            type="button"
-                            onClick={() => removeContributor(index)}
-                            variant="outline"
-                            size="icon"
-                            className="flex-shrink-0 text-red-500 border-red-200 hover:bg-red-50"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-grow">
+                            <Input
+                              value={contributor}
+                              onChange={(e) => handleContributorChange(index, e.target.value)}
+                              placeholder="Search by email"
+                              className={`pr-10 ${contributorValidation[index]?.isValid ? 'border-green-500' : contributor ? 'border-red-500' : ''}`}
+                            />
+                            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                              {isSearching && <Search className="h-4 w-4 text-gray-400 animate-pulse" />}
+                              {contributor && !isSearching && (
+                                contributorValidation[index]?.isValid ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <X className="h-4 w-4 text-red-500" />
+                                )
+                              )}
+                            </div>
+                          </div>
+                          {contributors.length > 1 && (
+                            <Button
+                              type="button"
+                              onClick={() => removeContributor(index)}
+                              variant="outline"
+                              size="icon"
+                              className="flex-shrink-0 text-red-500 border-red-200 hover:bg-red-50"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Search Results Dropdown */}
+                        {searchResults.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                            {searchResults.map((user) => (
+                              <div
+                                key={user._id}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                onClick={() => handleUserSelect(index, user)}
+                              >
+                                <div className="font-medium">{user.name}</div>
+                                <div className="text-sm text-gray-500">{user.email}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {contributorValidation[index]?.isValid && (
+                          <p className="text-sm text-green-600">
+                            {contributorValidation[index].name} will be added as a contributor
+                          </p>
+                        )}
+                        {contributor && !contributorValidation[index]?.isValid && !isSearching && (
+                          <p className="text-sm text-red-600">
+                            No user found with this email
+                          </p>
                         )}
                       </div>
                     ))}

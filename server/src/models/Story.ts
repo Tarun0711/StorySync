@@ -1,43 +1,48 @@
 import mongoose from 'mongoose';
 
-interface IStory {
-  title: string;
-  content: string;
-  author: mongoose.Types.ObjectId;
-  contributors: mongoose.Types.ObjectId[];
-  status: 'draft' | 'published' | 'completed';
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const storySchema = new mongoose.Schema<IStory>({
+const storySchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
     trim: true
   },
-  content: {
+  genre: {
+    type: String,
+    required: true,
+    enum: ['Fantasy', 'Sci-Fi', 'Mystery', 'Romance', 'Horror', 'Thriller', 'Historical', 'Adventure', 'Cyberpunk', 'Other']
+  },
+  prompt: {
     type: String,
     required: true
   },
-  author: {
+  isPrivate: {
+    type: Boolean,
+    default: false
+  },
+  contributors: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }],
+  owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  contributors: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  status: {
-    type: String,
-    enum: ['draft', 'published', 'completed'],
-    default: 'draft'
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true
 });
 
-const Story = mongoose.model<IStory>('Story', storySchema);
+// Update the updatedAt field before saving
+storySchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
 
-export default Story; 
+export const Story = mongoose.model('Story', storySchema); 

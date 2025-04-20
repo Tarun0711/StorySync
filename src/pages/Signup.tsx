@@ -12,6 +12,7 @@ import { setAuthenticated } from '@/store/slices/authSlice';
 const Signup = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,7 +34,7 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      await authService.signup(name, email, password);
+      await authService.signup(name, username, email, password);
       dispatch(setAuthenticated(true)); // ✅ Mark as authenticated
 
       navigate('/');
@@ -74,6 +75,17 @@ const Signup = () => {
                 placeholder="Your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                placeholder="Choose a username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
