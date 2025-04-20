@@ -6,6 +6,7 @@ import storyRoutes from './routes/storyRoutes';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import contributionRoutes from './routes/contributionRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 import './models'; // Import models to ensure they're registered
 
@@ -22,6 +23,7 @@ app.use('/api/stories', storyRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/contributions', contributionRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 // Database connection

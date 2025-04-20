@@ -8,34 +8,84 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import {  logoutUser } from '@/store/slices/authThunk';
+import { logoutUser } from '@/store/slices/authThunk';
 import { fetchUserProfile } from '@/store/slices/userSlice';
 import type { RootState } from '@/store';
+import { formatDistanceToNow } from 'date-fns';
+
+interface Notification {
+  _id: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  type: string;
+  data: any;
+}
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [hasNotifications] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [hasUnread, setHasUnread] = useState(false);
   const dispatch = useAppDispatch();
   const { isAuthenticated, user } = useAppSelector((state: RootState) => state.auth);
   const { profile, loading } = useAppSelector((state: RootState) => state.user);
   
   const toggleMenu = () => setIsOpen(!isOpen);
-  const navigate =useNavigate()
+  const navigate = useNavigate();
   
   const handleLogin = () => {
-    navigate('/login')
-    // dispatch(login('test@example.com', 'password')); // Replace with actual credentials
+    navigate('/login');
   };
 
   const handleLogout = () => {
     dispatch(logoutUser());
   };
 
+  const fetchNotifications = async () => {
+    if (!user?._id) return;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5001/api/notifications/${user._id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      setNotifications(Array.isArray(data) ? data : []);
+      setHasUnread(Array.isArray(data) && data.some((n: Notification) => !n.read));
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications([]);
+      setHasUnread(false);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5001/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      fetchNotifications();
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchUserProfile());
+      fetchNotifications();
+      // Set up polling for new notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
     }
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, dispatch, user?._id]);
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -82,7 +132,7 @@ const Navbar = () => {
                   <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative">
                       <BellDot className="h-5 w-5 text-gray-600" />
-                      {hasNotifications && (
+                      {hasUnread && (
                         <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
                       )}
                     </Button>
@@ -90,9 +140,28 @@ const Navbar = () => {
                   <PopoverContent className="w-80">
                     <div className="space-y-2">
                       <h4 className="font-medium">Notifications</h4>
-                      <div className="text-sm text-gray-500">
-                        New contributions to your stories will appear here
-                      </div>
+                      {notifications.length === 0 ? (
+                        <div className="text-sm text-gray-500">
+                          No notifications yet
+                        </div>
+                      ) : (
+                        <div className="max-h-60 overflow-y-auto">
+                          {Array.isArray(notifications) && notifications.map((notification) => (
+                            <div
+                              key={notification._id}
+                              className={`p-2 rounded-md ${
+                                !notification.read ? 'bg-gray-50' : ''
+                              }`}
+                              onClick={() => markAsRead(notification._id)}
+                            >
+                              <p className="text-sm">{notification.message}</p>
+                              <p className="text-xs text-gray-500">
+                                {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </PopoverContent>
                 </Popover>

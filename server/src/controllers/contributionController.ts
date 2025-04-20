@@ -5,6 +5,7 @@ import { Story } from '../models/Story';
 import Contribution from '../models/Contribution';
 import { Types } from 'mongoose';
 import User from '../models/User';
+import { createNotification } from './notificationController';
 
 dotenv.config();
 
@@ -153,6 +154,19 @@ export const addContribution = async (req: Request, res: Response) => {
       );
     }
 
+    // Create notification for the story owner
+    if (story.owner.toString() !== authorId.toString()) {
+      await createNotification(
+        story.owner.toString(),
+        `New contribution to your story "${story.title}"`,
+        'contribution',
+        {
+          storyId: story._id,
+          contributionId: contribution._id,
+        }
+      );
+    }
+
     res.status(201).json(contribution);
   } catch (error) {
     console.error('Error adding contribution:', error);
@@ -203,5 +217,46 @@ export const deleteContribution = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting contribution:', error);
     res.status(500).json({ message: 'Error deleting contribution', error });
+  }
+};
+
+export const createContribution = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const { storyId, content } = req.body;
+    const userId = req.user._id;
+
+    const story = await Story.findById(storyId);
+    if (!story) {
+      return res.status(404).json({ message: 'Story not found' });
+    }
+
+    const contribution = new Contribution({
+      storyId,
+      userId,
+      content,
+    });
+
+    await contribution.save();
+
+    // Create notification for the story owner
+    if (story.owner.toString() !== userId.toString()) {
+      await createNotification(
+        story.owner.toString(),
+        `New contribution to your story "${story.title}"`,
+        'contribution',
+        {
+          storyId: story._id,
+          contributionId: contribution._id,
+        }
+      );
+    }
+
+    res.status(201).json(contribution);
+  } catch (error) {
+    res.status(500).json({ message: 'Error creating contribution' });
   }
 };
