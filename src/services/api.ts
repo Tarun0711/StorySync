@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -112,6 +112,18 @@ export const contributionService = {
 
   addContribution: async (storyId: string, payload: { content: string; evaluation: any }) => {
     const response = await api.post(`/contributions/stories/${storyId}/contributions`, payload);
+    return response.data;
+  }
+};
+
+export const adminService = {
+  getContributions: async () => {
+    const response = await api.get('/contributions');
+    return response.data;
+  },
+
+  deleteContribution: async (contributionId: string) => {
+    const response = await api.delete(`/contributions/${contributionId}`);
     return response.data;
   }
 }; 

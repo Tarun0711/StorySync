@@ -34,7 +34,7 @@ const contributionSchema = new mongoose.Schema<IContribution>({
   status: {
     type: String,
     enum: ['pending', 'accepted', 'rejected'],
-    default: 'pending'
+    default: 'accepted'
   },
   evaluation: {
     relevance: { type: Number },

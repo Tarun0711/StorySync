@@ -63,6 +63,14 @@ const Navbar = () => {
               >
                 Leaderboard
               </Link>
+              {user?.isAdmin && (
+                <Link 
+                  to="/admin" 
+                  className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-story-purple"
+                >
+                  Admin Dashboard
+                </Link>
+              )}
             </div>
           </div>
           
@@ -156,6 +164,15 @@ const Navbar = () => {
             >
               Leaderboard
             </Link>
+            {user?.isAdmin && (
+              <Link
+                to="/admin"
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 hover:border-story-purple"
+                onClick={toggleMenu}
+              >
+                Admin Dashboard
+              </Link>
+            )}
             
             {isAuthenticated ? (
               <>

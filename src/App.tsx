@@ -16,6 +16,7 @@ import Signup from "./pages/Signup";
 import UserProfile from "./pages/UserProfile";
 import Leaderboard from "./pages/Leaderboard";
 import StoryDetail from "./pages/StoryDetail";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/profile/:userId" element={<UserProfile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

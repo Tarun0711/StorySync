@@ -159,3 +159,49 @@ export const addContribution = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error adding contribution', error });
   }
 };
+
+export const getContributions = async (req: Request, res: Response) => {
+  try {
+    const contributions = await Contribution.find()
+      .populate('author', 'username email name profilePicture')
+      .populate('story', 'title')
+      .sort({ createdAt: -1 });
+    
+    res.json(contributions);
+  } catch (error) {
+    console.error('Error fetching contributions:', error);
+    res.status(500).json({ message: 'Error fetching contributions', error });
+  }
+};
+
+export const deleteContribution = async (req: Request, res: Response) => {
+  try {
+    const contributionId = req.params.id;
+    const contribution = await Contribution.findById(contributionId);
+
+    if (!contribution) {
+      return res.status(404).json({ message: 'Contribution not found' });
+    }
+
+    // Check if user is authorized to delete (only author or story owner can delete)
+    const story = await Story.findById(contribution.story);
+    if (!story) {
+      return res.status(404).json({ message: 'Associated story not found' });
+    }
+
+
+    // Remove contribution from story's contributions array
+    story.contributions = story.contributions.filter(
+      (contributionRef) => !contributionRef.equals(contributionId)
+    );
+    await story.save();
+
+    // Delete the contribution
+    await contribution.deleteOne();
+
+    res.json({ message: 'Contribution deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting contribution:', error);
+    res.status(500).json({ message: 'Error deleting contribution', error });
+  }
+};
