@@ -87,7 +87,7 @@ const ReadingMode = ({ title, genre, paragraphs = [], onClose }: ReadingModeProp
             ) : (
               paragraphs.map((paragraph, index) => (
                 <div key={paragraph.id} className="prose max-w-none">
-                  <p className="leading-relaxed text-gray-800">{paragraph.content}</p>
+                  <div className="mt-2 text-gray-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: paragraph.content }} />
                   <div className="text-sm text-gray-500 mt-2">
                     — {paragraph.authorName}
                   </div>

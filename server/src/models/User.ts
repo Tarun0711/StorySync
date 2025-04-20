@@ -10,6 +10,7 @@ interface IUser {
   profilePicture: string;
   stories: mongoose.Types.ObjectId[];
   contributions: mongoose.Types.ObjectId[];
+  badges: string[];
   points: number;
   createdAt: Date;
   updatedAt: Date;
@@ -67,6 +68,10 @@ const userSchema = new mongoose.Schema<IUser, UserModel, IUserMethods>({
     type: Number,
     default: 0
   },
+  badges: [{
+    type: String,
+    enum:['Grammarian', 'Creative', 'Relevant', 'Punctual']
+  }],
   createdAt: {
     type: Date,
     default: Date.now

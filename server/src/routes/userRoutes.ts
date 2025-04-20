@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import User from '../models/User';
+import Contribution from '../models/Contribution';
 
 
 const router = express.Router();
@@ -42,7 +43,13 @@ router.get('/profile/:userId', auth, async (req: any, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    // Get contributions separately
+    const contributions = await Contribution.find({ author: userId });
+    
+    res.json({
+      ...user.toObject(),
+      contributions: contributions.map(contribution => contribution.toObject())
+    });
   } catch (error) {
     console.error('Error fetching user profile:', error);
     if (error instanceof Error) {

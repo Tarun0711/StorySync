@@ -5,6 +5,13 @@ interface IContribution {
   author: mongoose.Types.ObjectId;
   story: mongoose.Types.ObjectId;
   status: 'pending' | 'accepted' | 'rejected';
+  evaluation?: {
+    relevance: number;
+    grammar: number;
+    creativity: number;
+    totalScore: number;
+    feedback: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +35,13 @@ const contributionSchema = new mongoose.Schema<IContribution>({
     type: String,
     enum: ['pending', 'accepted', 'rejected'],
     default: 'pending'
+  },
+  evaluation: {
+    relevance: { type: Number },
+    grammar: { type: Number },
+    creativity: { type: Number },
+    totalScore: { type: Number },
+    feedback: { type: String }
   }
 }, {
   timestamps: true

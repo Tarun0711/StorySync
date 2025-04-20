@@ -29,6 +29,10 @@ const storySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  contributions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Contribution'
+  }],
   createdAt: {
     type: Date,
     default: Date.now

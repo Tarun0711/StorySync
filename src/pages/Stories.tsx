@@ -21,6 +21,7 @@ interface Story {
   genre: string;
   prompt: string;
   contributors: string[];
+  contributions: string[];
   createdAt: string;
   updatedAt: string;
   paragraphs?: any[];
@@ -162,7 +163,7 @@ const Stories = () => {
                         <span>{story.contributors.length} contributors</span>
                       </div>
                       <div>
-                        {story.paragraphs?.length || 0} paragraphs
+                        {story.contributions?.length || 0} Paragraphs
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1" />

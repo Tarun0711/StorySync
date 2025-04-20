@@ -102,4 +102,16 @@ export const storyService = {
     const response = await api.get('/stories');
     return response.data;
   },
+};
+
+export const contributionService = {
+  analyzeContribution: async (contribution: string, previousContent?: string) => {
+    const response = await api.post('/contributions/analyze', { contribution, previousContent });
+    return response.data;
+  },
+
+  addContribution: async (storyId: string, payload: { content: string; evaluation: any }) => {
+    const response = await api.post(`/contributions/stories/${storyId}/contributions`, payload);
+    return response.data;
+  }
 }; 

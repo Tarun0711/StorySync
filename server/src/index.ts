@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import storyRoutes from './routes/storyRoutes';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
+import contributionRoutes from './routes/contributionRoutes';
+
 import './models'; // Import models to ensure they're registered
 
 dotenv.config();
@@ -19,6 +21,8 @@ app.use(express.json());
 app.use('/api/stories', storyRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/contributions', contributionRoutes);
+
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI!)

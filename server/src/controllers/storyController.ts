@@ -26,7 +26,18 @@ export const createStory = async (req: Request, res: Response) => {
 
 export const getStory = async (req: Request, res: Response) => {
   try {
-    const story = await Story.findById(req.params.id);
+    const story = await Story.findById(req.params.id)
+      .populate('owner', 'name email profilePicture')
+      .populate('contributors', 'name username email profilePicture')
+      .populate({
+        path: 'contributions',
+        select: 'content author status evaluation createdAt',
+        populate: {
+          path: 'author',
+          select: 'name email profilePicture'
+        }
+      });
+
     if (!story) {
       return res.status(404).json({ message: 'Story not found' });
     }
@@ -115,7 +126,18 @@ export const listStories = async (req: Request, res: Response) => {
       );
     }
 
-    const stories = await Story.find(query).sort({ createdAt: -1 });
+    const stories = await Story.find(query)
+      .populate('owner', 'username email name profilePicture')
+      .populate('contributors', 'username email name profilePicture')
+      .populate({
+        path: 'contributions',
+        select: 'content author status evaluation createdAt',
+        populate: {
+          path: 'author',
+          select: 'username email name profilePicture'
+        }
+      })
+      .sort({ createdAt: -1 });
     res.json(stories);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching stories', error });

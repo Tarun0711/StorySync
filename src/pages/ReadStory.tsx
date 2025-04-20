@@ -12,14 +12,42 @@ interface Story {
   _id: string;
   title: string;
   genre: string;
-  paragraphs: Array<{
-    id: number;
-    content: string;
-    authorId: number;
-    authorName: string;
-    createdAt: string;
-    score: number | null;
+  prompt: string;
+  isPrivate: boolean;
+  contributors: Array<{
+    _id: string;
+    name: string;
+    email: string;
+    username?: string;
+    profilePicture: string;
   }>;
+  owner: {
+    _id: string;
+    name: string;
+    email: string;
+    profilePicture: string;
+  };
+  contributions: Array<{
+    _id: string;
+    content: string;
+    author: {
+      _id: string;
+      name: string;
+      email: string;
+      profilePicture: string;
+    };
+    status: string;
+    evaluation?: {
+      relevance: number;
+      grammar: number;
+      creativity: number;
+      totalScore: number;
+      feedback: string;
+    };
+    createdAt: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ReadStory = () => {
@@ -116,10 +144,37 @@ const ReadStory = () => {
           </div>
         </div>
         
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">{story.title}</h1>
+          <div className="flex items-center gap-4 text-gray-600 mb-4">
+            <span className="bg-story-purple/10 text-story-purple px-3 py-1 rounded-full text-sm">
+              {story.genre}
+            </span>
+            {story.isPrivate && (
+              <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
+                Private
+              </span>
+            )}
+          </div>
+          {story.prompt && (
+            <div className="prose max-w-none mb-8">
+              <h3 className="text-lg font-semibold mb-2">Story Prompt</h3>
+              <div dangerouslySetInnerHTML={{ __html: story.prompt }} />
+            </div>
+          )}
+        </div>
+
         <StoryNotebook 
           title={story.title}
           genre={story.genre}
-          paragraphs={story.paragraphs}
+          paragraphs={story.contributions.map((contribution, index) => ({
+            id: index + 1,
+            content: contribution.content,
+            authorId: parseInt(contribution.author._id),
+            authorName: contribution.author.name,
+            createdAt: new Date(contribution.createdAt).toLocaleDateString(),
+            score: contribution.evaluation?.totalScore || null
+          }))}
         />
       </div>
 
@@ -127,7 +182,11 @@ const ReadStory = () => {
         <ReadingMode
           title={story.title}
           genre={story.genre}
-          paragraphs={story.paragraphs}
+          paragraphs={story.contributions.map((contribution, index) => ({
+            id: index + 1,
+            content: contribution.content,
+            authorName: contribution.author.name
+          }))}
           onClose={() => setIsReadingMode(false)}
         />
       )}

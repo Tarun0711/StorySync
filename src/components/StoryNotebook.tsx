@@ -50,7 +50,8 @@ const StoryNotebook = ({ title, genre, paragraphs = [] }: StoryNotebookProps) =>
                       <span className="text-gray-500 text-sm ml-2">{paragraph.createdAt}</span>
                     </div>
                   </div>
-                  <p className="mt-2 text-gray-800 leading-relaxed">{paragraph.content}</p>
+                  <div className="mt-2 text-gray-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: paragraph.content }} />
+
                 </div>
               </div>
             ))

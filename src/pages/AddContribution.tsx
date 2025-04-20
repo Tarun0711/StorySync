@@ -1,46 +1,59 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '@/components/MainLayout';
 import { Button } from '@/components/ui/button';
 import RichTextEditor from '@/components/RIchTextEditor';
 import 'react-quill/dist/quill.snow.css';
 import { Card, CardContent } from '@/components/ui/card';
 import { Check, X } from 'lucide-react';
+import { contributionService } from '@/services/api';
+import { toast } from 'sonner';
 
 const AddContribution = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [newContribution, setNewContribution] = useState('');
   const [isSubmittingContribution, setIsSubmittingContribution] = useState(false);
   const [aiEvaluation, setAiEvaluation] = useState<any | null>(null);
   
-  // Mock function to simulate submitting a contribution and getting AI feedback
-  const submitContribution = () => {
+  const submitContribution = async () => {
     if (!newContribution.trim()) return;
     
     setIsSubmittingContribution(true);
     
-    // Simulate AI processing delay
-    setTimeout(() => {
-      const mockEvaluation = {
-        relevance: 7.5,
-        grammar: 8.0,
-        creativity: 7.0,
-        totalScore: 22.5,
-        feedback: "Good continuation of the story. Consider adding more descriptive elements to enhance the imagery. Your narrative flows well with the previous paragraphs."
+    try {
+      const evaluation = await contributionService.analyzeContribution(newContribution);
+      setAiEvaluation(evaluation);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to analyze contribution');
+    } finally {
+      setIsSubmittingContribution(false);
+    }
+  };
+  
+  const acceptEvaluation = async () => {
+    if (!id) return;
+    
+    try {
+      const payload = {
+        content: newContribution,
+        evaluation: {
+          relevance: aiEvaluation.relevance,
+          grammar: aiEvaluation.grammar,
+          creativity: aiEvaluation.creativity,
+          totalScore: aiEvaluation.totalScore,
+          feedback: aiEvaluation.feedback
+        }
       };
       
-      setAiEvaluation(mockEvaluation);
-      setIsSubmittingContribution(false);
-    }, 2000);
+      await contributionService.addContribution(id, payload);
+      toast.success('Contribution added successfully');
+      navigate(`/stories/${id}`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to add contribution');
+    }
   };
   
-  // Function to accept the AI evaluation and add contribution
-  const acceptEvaluation = () => {
-    setAiEvaluation(null);
-    setNewContribution('');
-  };
-  
-  // Function to cancel the contribution
   const cancelContribution = () => {
     setAiEvaluation(null);
     setNewContribution('');
